@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <math.h>
 using namespace std;
 
 int permutationTable[64] =
@@ -96,12 +97,12 @@ void sBox(int expandedBlock[], int shrankBlock[]) {
     currentBlock = 6 * i;
     row = 2 * expandedBlock[currentBlock] + expandedBlock[currentBlock + 5];
     column = 8 * expandedBlock[currentBlock + 1] + 4 * expandedBlock[currentBlock + 2] +
-      2 * expandedBlock[currentBlock + 4] + expandedBlock[currentBlock + 4];
+      2 * expandedBlock[currentBlock + 3] + expandedBlock[currentBlock + 4];
     newValue = sBoxTable[i][row * 16 + column];
 
     for (int p = 3; p >= 0; p--){
-      shrankBlock[i * 6 + p] = newValue % 2;
-      newValue >>= 1;
+      shrankBlock[i * 4 + p] = newValue % 2;
+      newValue /= 2;
     }
   }
 }
@@ -109,7 +110,7 @@ void sBox(int expandedBlock[], int shrankBlock[]) {
 void halfPermutation(int block[], int permutedBlock[]) {
   int oldIndex;
   for (int i = 0; i < 32; i++) {
-    oldIndex = halfPermutationTable[i];
+    oldIndex = halfPermutationTable[i] - 1;
     permutedBlock[i] = block[oldIndex];
   }
 }
@@ -117,11 +118,13 @@ void halfPermutation(int block[], int permutedBlock[]) {
 void mangler(int halfBlock[], int mangledBlock[]) {
   int expandedBlock[48];
   expand(halfBlock, expandedBlock);
+
   for (int i = 0; i < 48; i++) {
     expandedBlock[i] ^= globalKey[i];
   }
   int shrankBlock[32];
   sBox(expandedBlock, shrankBlock);
+
   halfPermutation(shrankBlock, mangledBlock);
 }
 
@@ -130,6 +133,7 @@ void feistal(int leftBlock[], int rightBlock[]) {
   int tempBit;
 
   mangler(rightBlock, mangledRight);
+
   for (int i = 0; i < 32; i++) {
     mangledRight[i] ^= leftBlock[i];
     leftBlock[i] = rightBlock[i];
@@ -141,7 +145,7 @@ void permutation(int block[], int permutedBlock[]) {
   int oldIndex;
 
   for (int i = 0; i < 64; i++) {
-    oldIndex = permutationTable[i];
+    oldIndex = permutationTable[i] - 1;
     permutedBlock[i] = block[oldIndex];
   }
 }
@@ -186,10 +190,22 @@ void roundHandler(int block[]) {
 void printBlock(int block[], int index) {
   int currentChar;
 
+  cout << "Final Block: " << endl;
+  for (int i = 0; i < 8; i++) {
+    for (int p = 0; p < 8; p++){
+      cout << block[i*8 + p];
+    }
+    cout << endl;
+  }
+
+  cout << endl;
+  
+  cout << "Cipher Text: " << endl;
+
   for (int i = 0; i < 8; i++) {
     currentChar = 0;
     for (int p = 0; p < 8; p++){
-      currentChar += block[i * 8 + p] * (2 ^ (7 - p));
+      currentChar += block[i * 8 + p] * pow(2, (7 - p));
     }
     cout << currentChar << " ";
   }
@@ -211,7 +227,7 @@ void blockPrep(string blockString, int index) {
 }
 
 int main() {
-  string plaintext = "This was a top secret assignment";
+  string plaintext = "This was";
 
   unsigned char byteKey[] = {0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc};
   int remainder;
@@ -226,6 +242,7 @@ int main() {
   for (int i = 0; i < plaintext.length() / 8; i++) {
     blockPrep(plaintext.substr(i * 8, 8), i);
   }
+  cout << endl;
 
   return 0;
 }
