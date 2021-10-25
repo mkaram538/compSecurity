@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include "des.hpp"
 using namespace std;
 
 int permutationTable[64] =
@@ -73,11 +74,9 @@ int sBoxTable[8][64] = {
 	 7, 11,  4,  1,  9, 12, 14,  2,  0,  6, 10, 13, 15,  3,  5,  8,
 	 2,  1, 14,  7,  4, 10,  8, 13, 15, 12,  9,  0,  3,  5,  6, 11}};
 
-int globalKey[48];
+unsigned char byteKey[] = {0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc};
 
-int numRounds = 1;
-
-void expand(int halfBlock[], int expandedBlock[]) {
+void DES::expand(int halfBlock[], int expandedBlock[]) {
   int oldIndex;
   for (int i = 0; i < 48; i++) {
     oldIndex = expansionTable[i] - 1;
@@ -85,7 +84,7 @@ void expand(int halfBlock[], int expandedBlock[]) {
   }
 }
 
-void sBox(int expandedBlock[], int shrankBlock[]) {
+void DES::sBox(int expandedBlock[], int shrankBlock[]) {
   int row;
   int column;
   int newValue;
@@ -106,7 +105,7 @@ void sBox(int expandedBlock[], int shrankBlock[]) {
   }
 }
 
-void halfPermutation(int block[], int permutedBlock[]) {
+void DES::halfPermutation(int block[], int permutedBlock[]) {
   int oldIndex;
   for (int i = 0; i < 32; i++) {
     oldIndex = halfPermutationTable[i];
@@ -114,18 +113,18 @@ void halfPermutation(int block[], int permutedBlock[]) {
   }
 }
 
-void mangler(int halfBlock[], int mangledBlock[]) {
+void DES::mangler(int halfBlock[], int mangledBlock[]) {
   int expandedBlock[48];
   expand(halfBlock, expandedBlock);
   for (int i = 0; i < 48; i++) {
-    expandedBlock[i] ^= globalKey[i];
+    expandedBlock[i] ^= bitKey[i];
   }
   int shrankBlock[32];
   sBox(expandedBlock, shrankBlock);
   halfPermutation(shrankBlock, mangledBlock);
 }
 
-void feistal(int leftBlock[], int rightBlock[]) {
+void DES::feistal(int leftBlock[], int rightBlock[]) {
   int mangledRight[32];
   int tempBit;
 
@@ -137,7 +136,7 @@ void feistal(int leftBlock[], int rightBlock[]) {
   }
 }
 
-void permutation(int block[], int permutedBlock[]) {
+void DES::permutation(int block[], int permutedBlock[]) {
   int oldIndex;
 
   for (int i = 0; i < 64; i++) {
@@ -146,7 +145,7 @@ void permutation(int block[], int permutedBlock[]) {
   }
 }
 
-void swapHalves(int leftBlock[], int rightBlock[]) {
+void DES::swapHalves(int leftBlock[], int rightBlock[]) {
   int tempBit;
 
   for (int i = 0; i < 32; i++) {
@@ -156,19 +155,19 @@ void swapHalves(int leftBlock[], int rightBlock[]) {
   }
 }
 
-void splitHalves(int block[], int leftBlock[], int rightBlock[]) {
+void DES::splitHalves(int block[], int leftBlock[], int rightBlock[]) {
   for (int i = 0; i < 64; i++) {
     i / 32 == 0 ? leftBlock[i] = block[i] : rightBlock[i-32] = block[i];
   }
 }
 
-void combineHalves(int block[], int leftBlock[], int rightBlock[]) {
+void DES::combineHalves(int block[], int leftBlock[], int rightBlock[]) {
   for (int i = 0; i < 64; i++) {
     i / 32 == 0 ? block[i] = leftBlock[i] : block[i] = rightBlock[i-32];
   }
 }
 
-void roundHandler(int block[]) {
+void DES::roundHandler(int block[]) {
   int permutedBlock[64];
   int leftBlock[32];
   int rightBlock[32];
@@ -183,7 +182,7 @@ void roundHandler(int block[]) {
   permutation(permutedBlock, block);
 }
 
-void printBlock(int block[]) {
+void DES::printBlock(int block[]) {
   string ciphertext = "";
   int currentChar;
 
@@ -197,7 +196,7 @@ void printBlock(int block[]) {
   cout << "Block: " << ciphertext << endl;
 }
 
-void blockPrep(string blockString) {
+void DES::blockPrep(string blockString) {
   int block[64];
   int remainder;
 
@@ -212,22 +211,21 @@ void blockPrep(string blockString) {
   printBlock(block);
 }
 
-int main() {
-  string plaintext = "This was a top secret assignment";
+DES::DES(int numRounds, string plaintext) {
+  numRounds = numRounds;
+  plaintext = plaintext;
 
-  unsigned char byteKey[] = {0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc};
   int remainder;
   for (int i = 0; i < 6; i++) {
     remainder = (int) byteKey[i];
     for (int p = 7; p >= 0; p--){
-      globalKey[i * 8 + p] = remainder % 2;
+      bitKey[i * 8 + p] = remainder % 2;
       remainder >>= 1;
     }
   }
-
   for (int i = 0; i < plaintext.length() / 8; i++) {
+    cout << "Beginning Block Prep" << endl;
     blockPrep(plaintext.substr(i * 8, 8));
+    cout << "Finished with Block" << endl;
   }
-
-  return 0;
 }
