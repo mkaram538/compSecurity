@@ -183,8 +183,7 @@ void roundHandler(int block[]) {
   permutation(permutedBlock, block);
 }
 
-void printBlock(int block[]) {
-  string ciphertext = "";
+void printBlock(int block[], int index) {
   int currentChar;
 
   for (int i = 0; i < 8; i++) {
@@ -192,12 +191,11 @@ void printBlock(int block[]) {
     for (int p = 0; p < 8; p++){
       currentChar += block[i * 8 + p] * (2 ^ (7 - p));
     }
-    ciphertext += (char)currentChar;
+    cout << currentChar << " ";
   }
-  cout << "Block: " << ciphertext << endl;
 }
 
-void blockPrep(string blockString) {
+void blockPrep(string blockString, int index) {
   int block[64];
   int remainder;
 
@@ -209,7 +207,7 @@ void blockPrep(string blockString) {
     }
   }
   roundHandler(block);
-  printBlock(block);
+  printBlock(block, index);
 }
 
 int main() {
@@ -226,7 +224,7 @@ int main() {
   }
 
   for (int i = 0; i < plaintext.length() / 8; i++) {
-    blockPrep(plaintext.substr(i * 8, 8));
+    blockPrep(plaintext.substr(i * 8, 8), i);
   }
 
   return 0;
